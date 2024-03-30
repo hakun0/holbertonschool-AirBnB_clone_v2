@@ -72,6 +72,7 @@ class HBNBCommand(cmd.Cmd):
                 # if arguments exist beyond _id
                 pline = pline[2].strip()  # pline is now str
                 if pline:
+                    
                     # check for *args or **kwargs
                     if pline[0] == '{' and pline[-1] == '}'\
                             and type(eval(pline)) is dict:
