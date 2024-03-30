@@ -2,14 +2,19 @@
 """ Console Module """
 import cmd
 import sys
+import os
+import uuid
+from datetime import datetime
+import re
 from models.base_model import BaseModel
-from models.__init__ import storage
 from models.user import User
 from models.place import Place
 from models.state import State
 from models.city import City
 from models.amenity import Amenity
+from models.amenity import Amenity
 from models.review import Review
+from models import storage
 
 
 class HBNBCommand(cmd.Cmd):
@@ -72,7 +77,6 @@ class HBNBCommand(cmd.Cmd):
                 # if arguments exist beyond _id
                 pline = pline[2].strip()  # pline is now str
                 if pline:
-                    
                     # check for *args or **kwargs
                     if pline[0] == '{' and pline[-1] == '}'\
                             and type(eval(pline)) is dict:
@@ -116,52 +120,33 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, args):
         """ Create an object of any class"""
-        args = args.split()
-
-        if not args or len(args) < 1:
-            print('** class name missing **')
+        if not args:
+            print("** class name missing **")
             return
-        
-        name = args[0]
-        if name not in HBNBCommand.classes:
+
+        # Extract the class name from args
+        class_name = args.split(" ")[0]
+        if class_name not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
+        new_instance = HBNBCommand.classes[class_name]()
 
-        kwargs = {}
-        for arg in args[1:]:
-            arg_split = arg.split('=')
-            if len(arg_split) < 2:
-                continue
+        for arg in args.split(" ")[1:]:
+            try:
+                attr_name, attr_value = arg.split("=")
+                if attr_value[0] == "\"":
+                    attr_value = attr_value.replace("\"", "").replace(
+                        "_", " ")
+                elif "." in attr_value:
+                    attr_value = float(attr_value)
+                else:
+                    attr_value = int(attr_value)
+                setattr(new_instance, attr_name, attr_value)
 
-            key, val = arg_split
-            if val.startswith('"') and val.endswith('"'):
-                raw = val
-                val = val[1:-1]
-                flg = False
-                for i, c in enumerate(val):
-                    if c == '"' and val[i-1] != '\\':
-                        flg = True
-                        break
-                
-                if flg:
-                    continue
-                    
-                val.replace('_', ' ')
-            elif val.isnumeric():
-                val = int(val)
-            elif val.replace('.', '').isnumeric():
-                val = float(val)
-            else:
-                continue
+            except Exception as e:
+                print(f"Error setting attribute: {e}")
 
-            kwargs[key] = val
-
-        new_instance = HBNBCommand.classes[name]()
-        for k, v in kwargs.items():
-            new_instance.__dict__[k] = v
-
-        storage.save()
-
+        new_instance.save()
         print(new_instance.id)
 
     def help_create(self):
@@ -361,4 +346,3 @@ class HBNBCommand(cmd.Cmd):
 
 if __name__ == "__main__":
     HBNBCommand().cmdloop()
-    
